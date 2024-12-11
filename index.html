@@ -47,6 +47,7 @@
             color: white;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
         }
 
         .menu a {
@@ -69,9 +70,15 @@
             display: none;
         }
 
-        #fileForm {
-            display: none;
+        .close-btn {
+            color: white;
+            font-size: 30px;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            cursor: pointer;
         }
+
     </style>
 </head>
 <body>
@@ -85,6 +92,7 @@
     </nav>
 
     <div class="menu" id="hamburgerMenu">
+        <span class="close-btn" onclick="toggleMenu()">×</span> <!-- Button to close the menu -->
         <a href="index.html">Home</a>
         <a href="blog.html">Blog</a>
         <a href="javascript:void(0)" onclick="showUploadForm()">Carica File</a>
@@ -96,7 +104,7 @@
         <button onclick="checkPasscode()">Conferma</button>
     </div>
 
-    <div id="fileForm">
+    <div id="fileForm" style="display:none;">
         <input type="file" id="fileInput" />
         <button onclick="uploadFile()">Carica</button>
     </div>
@@ -132,18 +140,23 @@
         function uploadFile() {
             var file = document.getElementById('fileInput').files[0];
             if (file) {
-                var fileReader = new FileReader();
-                fileReader.onload = function(e) {
-                    var fileContent = e.target.result;
-                    var fileName = file.name.split('.')[0]; // Name without extension
+                var formData = new FormData();
+                formData.append("file", file);
 
-                    // Simulate creating a new blog page (in real life, you'd generate a dynamic page)
-                    alert('File caricato con successo! Nome del file: ' + fileName);
-
-                    // For demo purposes, display file content on the current page
-                    document.body.innerHTML += `<h2>Nuovo Blog: ${fileName}</h2><pre>${fileContent}</pre>`;
-                };
-                fileReader.readAsText(file);
+                fetch("/.netlify/functions/upload", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('File caricato con successo!');
+                    // You can redirect to the new blog page or update the content here
+                    window.location.href = `/blog/${data.fileName}`;
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
+                    alert('Errore nel caricamento del file.');
+                });
             }
         }
     </script>
