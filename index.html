@@ -1,34 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog con Passcode</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Sito con Blog e Passcode</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 50px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        #file-upload {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #upload-section {
+            margin-top: 20px;
+        }
+
+        #error-message {
+            color: red;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="hamburger-menu">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-            <ul class="menu">
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li id="blog-btn">+</li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <section id="blog-content" class="hidden">
-            <h1>Blog</h1>
-            <div id="blog-articles">
-                <!-- I blog saranno caricati qui -->
-            </div>
-        </section>
-    </main>
-    <script src="script.js"></script>
+
+<h1>Benvenuto nel mio Blog</h1>
+<p>Carica il tuo articolo in formato .txt</p>
+
+<button id="plus-btn">+</button>
+
+<div id="upload-section" class="hidden">
+    <p>Inserisci il passcode per caricare il file:</p>
+    <input type="password" id="passcode-input" placeholder="Passcode">
+    <input type="file" id="file-upload" accept=".txt">
+    <button id="upload-btn">Carica File</button>
+    <p id="error-message" class="hidden">Passcode errato! Riprova.</p>
+</div>
+
+<script>
+    const correctPasscode = "RehanAhmed";
+
+    // Mostra la sezione di upload
+    document.getElementById("plus-btn").addEventListener("click", function() {
+        document.getElementById("upload-section").classList.remove("hidden");
+    });
+
+    // Gestione del caricamento del file
+    document.getElementById("upload-btn").addEventListener("click", function() {
+        const passcode = document.getElementById("passcode-input").value;
+        if (passcode === correctPasscode) {
+            const fileInput = document.getElementById("file-upload");
+            const file = fileInput.files[0];
+
+            if (file && file.name.endsWith(".txt")) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const content = event.target.result;
+                    // Crea una nuova pagina
+                    createBlogPage(file.name, content);
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Per favore carica un file .txt.");
+            }
+        } else {
+            document.getElementById("error-message").classList.remove("hidden");
+        }
+    });
+
+    // Crea una pagina per il blog
+    function createBlogPage(filename, content) {
+        const pageName = filename.replace(".txt", "") + "-blog.html";
+        const newWindow = window.open(pageName, "_blank");
+        newWindow.document.write(`
+            <html>
+            <head>
+                <title>${filename}</title>
+            </head>
+            <body>
+                <header>
+                    <h1>Blog - ${filename}</h1>
+                </header>
+                <article>
+                    <h2>Articolo Caricato</h2>
+                    <pre>${content}</pre>
+                </article>
+            </body>
+            </html>
+        `);
+    }
+</script>
+
 </body>
 </html>
