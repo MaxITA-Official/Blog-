@@ -1,41 +1,46 @@
 const fs = require('fs');
 const path = require('path');
+const { parse } = require('querystring');
 
-exports.handler = async (event, context) => {
-    if (event.httpMethod === 'POST') {
-        try {
-            const body = JSON.parse(event.body);
-            const fileContent = body.content;
-            const fileName = body.fileName;
+exports.handler = async function(event, context) {
+    const formData = await new Promise((resolve, reject) => {
+        let body = '';
+        event.body.on('data', chunk => body += chunk);
+        event.body.on('end', () => resolve(parse(body)));
+        event.body.on('error', reject);
+    });
 
-            const pageName = fileName.replace('.txt', '') + '-blog.html';
-            const filePath = path.join('/tmp', pageName);  // Salva nella cartella temporanea
+    const file = formData.file;
+    const fileName = path.basename(file.name, path.extname(file.name)); // estrai il nome senza estensione
 
-            const htmlContent = `
-                <html>
-                <head><title>${fileName}</title></head>
-                <body>
-                    <header><h1>Blog - ${fileName}</h1></header>
-                    <article><pre>${fileContent}</pre></article>
-                </body>
-                </html>
-            `;
+    // Crea un file nella cartella blog con il contenuto del file caricato
+    const blogPath = path.join(__dirname, '../site/blog', `${fileName}.html`);
 
-            await fs.promises.writeFile(filePath, htmlContent);
+    // Scrivi il contenuto del file come una nuova pagina HTML
+    const content = `<!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Blog: ${fileName}</title>
+    </head>
+    <body>
+        <h1>${fileName}</h1>
+        <pre>${file.content}</pre>
+    </body>
+    </html>`;
 
-            return {
-                statusCode: 200,
-                body: JSON.stringify({ message: 'Pagina creata con successo!', pageName })
-            };
-        } catch (error) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({ message: 'Errore nel caricamento del file', error })
-            };
-        }
+    // Salva il contenuto del file
+    try {
+        fs.writeFileSync(blogPath, content);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'File caricato con successo', fileName: fileName })
+        };
+    } catch (error) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Errore nel salvataggio del file' })
+        };
     }
-    return {
-        statusCode: 405,
-        body: JSON.stringify({ message: 'Metodo non consentito' })
-    };
 };
