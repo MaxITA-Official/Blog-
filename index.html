@@ -3,116 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sito con Blog e Passcode</title>
+    <title>Sito Blog</title>
     <style>
+        /* Stile base per il layout */
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 50px;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
         }
 
         h1 {
-            color: #333;
+            text-align: center;
+            margin-top: 50px;
         }
 
-        button {
-            padding: 10px 20px;
+        /* Stile per il menu hamburger */
+        .menu-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             background-color: #333;
             color: white;
-            border: none;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .menu-bar .menu-icon {
+            font-size: 30px;
             cursor: pointer;
         }
 
-        button:hover {
-            background-color: #555;
-        }
-
-        #file-upload {
+        .menu-bar .menu-items {
             display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: #333;
+            width: 200px;
         }
 
-        .hidden {
-            display: none;
+        .menu-bar .menu-items a {
+            padding: 10px;
+            text-decoration: none;
+            color: white;
+            border-bottom: 1px solid #555;
         }
 
-        #upload-section {
+        .menu-bar .menu-items a:hover {
+            background-color: #444;
+        }
+
+        /* Mostra il menu quando clicchi sull'icona */
+        .menu-bar.active .menu-items {
+            display: flex;
+        }
+
+        /* Stile del contenuto */
+        #content {
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        #upload-btn {
             margin-top: 20px;
-        }
-
-        #error-message {
-            color: red;
         }
     </style>
 </head>
 <body>
 
-<h1>Benvenuto nel mio Blog</h1>
-<p>Carica il tuo articolo in formato .txt</p>
+    <!-- Menu Hamburger -->
+    <div class="menu-bar">
+        <span class="menu-icon" id="hamburger-icon">&#9776;</span>
+        <div class="menu-items" id="menu-items">
+            <a href="index.html">Home</a>
+            <a href="javascript:void(0);" id="upload-btn">Carica Articolo</a>
+        </div>
+    </div>
 
-<button id="plus-btn">+</button>
+    <!-- Contenuto della pagina -->
+    <div id="content">
+        <h1>Benvenuto nel mio Blog</h1>
+        <input type="file" id="file-upload" accept=".txt" style="display:none;">
+        <div id="upload-form" style="display: none;">
+            <p>Seleziona un file .txt per caricare un articolo:</p>
+            <input type="file" id="file-upload-input" accept=".txt">
+        </div>
+    </div>
 
-<div id="upload-section" class="hidden">
-    <p>Inserisci il passcode per caricare il file:</p>
-    <input type="password" id="passcode-input" placeholder="Passcode">
-    <input type="file" id="file-upload" accept=".txt">
-    <button id="upload-btn">Carica File</button>
-    <p id="error-message" class="hidden">Passcode errato! Riprova.</p>
-</div>
+    <script>
+        // Toggle Menu
+        document.getElementById('hamburger-icon').addEventListener('click', function() {
+            document.querySelector('.menu-bar').classList.toggle('active');
+        });
 
-<script>
-    const correctPasscode = "RehanAhmed";
+        // Mostra il form di caricamento quando clicchi su "Carica Articolo"
+        document.getElementById('upload-btn').addEventListener('click', function() {
+            document.getElementById('upload-form').style.display = 'block';
+        });
 
-    // Mostra la sezione di upload
-    document.getElementById("plus-btn").addEventListener("click", function() {
-        document.getElementById("upload-section").classList.remove("hidden");
-    });
+        // Funzione per caricare il file
+        document.getElementById('file-upload-input').addEventListener('change', function(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var fileContent = e.target.result;
+                    var fileName = file.name;
 
-    // Gestione del caricamento del file
-    document.getElementById("upload-btn").addEventListener("click", function() {
-        const passcode = document.getElementById("passcode-input").value;
-        if (passcode === correctPasscode) {
-            const fileInput = document.getElementById("file-upload");
-            const file = fileInput.files[0];
-
-            if (file && file.name.endsWith(".txt")) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const content = event.target.result;
-                    // Crea una nuova pagina
-                    createBlogPage(file.name, content);
+                    // Chiamata alla funzione serverless su Netlify per caricare il file
+                    fetch('/.netlify/functions/upload-file', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            content: fileContent,
+                            fileName: fileName
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert("File caricato con successo! Pagina generata: " + data.pageName);
+                    })
+                    .catch(error => {
+                        alert("Errore nel caricamento del file");
+                    });
                 };
                 reader.readAsText(file);
-            } else {
-                alert("Per favore carica un file .txt.");
             }
-        } else {
-            document.getElementById("error-message").classList.remove("hidden");
-        }
-    });
-
-    // Crea una pagina per il blog
-    function createBlogPage(filename, content) {
-        const pageName = filename.replace(".txt", "") + "-blog.html";
-        const newWindow = window.open(pageName, "_blank");
-        newWindow.document.write(`
-            <html>
-            <head>
-                <title>${filename}</title>
-            </head>
-            <body>
-                <header>
-                    <h1>Blog - ${filename}</h1>
-                </header>
-                <article>
-                    <h2>Articolo Caricato</h2>
-                    <pre>${content}</pre>
-                </article>
-            </body>
-            </html>
-        `);
-    }
-</script>
-
+        });
+    </script>
 </body>
 </html>
